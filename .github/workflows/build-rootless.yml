@@ -45,4 +45,3 @@ jobs:
           path: packages/*.deb
           if-no-files-found: warn
           retention-days: 7
-          retention-days: 7
