@@ -1,17 +1,19 @@
-# BongbongAI source / build evidence
+# Build evidence — BongbongAI 0.1.0
 
-As of 2026-11-21:
-- Parent source commit: \`881a6793f671ed884e552ba71c2a2ef13103d8e7\`
-- Local Linux/clang portable WAV suite: **23/23 PASS**; static isolated-source checks: **21/21 PASS**
-- Local \`make package\`: **BLOCKED** — no Theos installed; actual error \`/makefiles/common.mk: No such file or directory\`
-- GitHub Actions macOS+Theos workflow created for real rootless compile. A workflow existing in source does **not** mean CI passed.
-- Compiled DEB: **NOT VERIFIED**. CarPlay scene/audio route and Gemini API: **NOT VERIFIED ON DEVICE**.
+## Confirmed on 2026-11-21
 
-Critical findings:
-- Gemini TTS 3.1 preview shut down on 2026-11-17; use 3.8 Flash TTS.
-- 3.8 non-streaming TTS returns WAV by default. Require \`response_format.mime_type=audio/l16\`, sample_rate=24000, and parse \`output_audio.data\`; do not treat WAV bytes as raw PCM.
-- \`status=completed\` is not an acoustic transcript guarantee: only car-speaker verification of last words can close the device gate.
+- Source HEAD at first compiled DEB: `b8829a4b2479db4dabbee8d8ca36db9e82b5e44d` (source functionally same as `69829099`; workflow diagnostic only).
+- GitHub Actions run 44894887652: host-source-checks PASS, genuine Theos/Xcode compile/link/sign/package PASS.
+- `dpkg-deb --contents` confirms prefix `var/jb/`, `BongbongAI.dylib`, injection filter `BongbongAI.plist` and `BongbongAIConfig.app`. The old check failed **only because it expected `./var/jb/` whereas macOS dpkg-deb printed `var/jb/`**. Do not interpret as invalid rootless package.
+- Independently downloaded and extracted compiled DEB in our working container. Both binaries are genuine Mach-O universal arm64/arm64e. Filter plist: CarPlayApp only.
+- DEB SHA-256: `ec1d789ec8df4dc3ce451a9367410db32cb68941cd829f0ed126fe77ca2d82f5` (35,016 bytes).
+- New regression checker normalizes paths, rejects any binary outside var/jb, checks package architecture and Mach-O slices.
 
-See https://ai.google.dev/gemini-api/docs/speech-generation and https://theos.dev/docs/rootless
+## Not yet verified
 
-Current credential transport is CFPreferences: *not Keychain*, may not cross Config/CarPlay sandbox, and is **NOT RELEASE-READY**.
+**DEVICE PENDING:** actual CarPlay external UIWindowScene, bubble z-order/interaction, Config->CarPlayApp CFPreferences transport, microphone (not implemented), Gemini API behavior and full audible output. Do not call it product-ready. The companion preferences are not a secure Keychain or verified cross-process transport; only use a disposable limited test key.
+
+## Replay build
+
+`./tests/run_host.sh` then `make clean package FINALPACKAGE=1` then `python3 tests/check_deb.py packages/*.deb`.
+GitHub Actions artifacts are marked **NOT DEVICE TESTED** and are not a production release.

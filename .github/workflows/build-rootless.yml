@@ -39,9 +39,9 @@ jobs:
           dpkg-deb --contents packages/*.deb
           python3 tests/check_deb.py packages/*.deb
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: success()
         with:
-          name: BongbongAI-DIAGNOSTIC-DO-NOT-INSTALL
+          name: BongbongAI-ROOTLESS-COMPILED-NOT-DEVICE-TESTED
           path: packages/*.deb
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 7
