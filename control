@@ -1,6 +1,6 @@
 Package: com.chuong.bongbongai
 Name: BongbongAI (CarPlay)
-Version: 0.1.0
+Version: 0.1.1
 Architecture: iphoneos-arm64
 Maintainer: BongbongAI project
 Author: BongbongAI project
