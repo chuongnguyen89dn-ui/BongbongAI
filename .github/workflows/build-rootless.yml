@@ -29,15 +29,20 @@ jobs:
           set -euo pipefail
           make clean package FINALPACKAGE=1 messages=yes
           ls -lah packages
-      - name: Check package identity and payload
+      - name: Inspect actual DEB manifest and gate package
         run: |
           set -euo pipefail
           command -v dpkg-deb || brew install dpkg
+          echo '=== CONTROL ==='
+          dpkg-deb --field packages/*.deb
+          echo '=== CONTENTS (actual paths) ==='
+          dpkg-deb --contents packages/*.deb
           python3 tests/check_deb.py packages/*.deb
       - uses: actions/upload-artifact@v4
-        if: success()
+        if: always()
         with:
-          name: BongbongAI-ROOTLESS-BUILD-UNTESTED
+          name: BongbongAI-DIAGNOSTIC-DO-NOT-INSTALL
           path: packages/*.deb
-          if-no-files-found: error
+          if-no-files-found: warn
+          retention-days: 7
           retention-days: 7
