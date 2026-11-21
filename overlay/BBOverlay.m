@@ -48,9 +48,7 @@
     for (NSNotificationName n in @[UISceneDidActivateNotification,
                                     UISceneWillDeactivateNotification,
                                     UISceneDidDisconnectNotification,
-                                    UIApplicationDidBecomeActiveNotification,
-                                    UIScreenDidConnectNotification,
-                                    UIScreenDidDisconnectNotification]) {
+                                    UIApplicationDidBecomeActiveNotification]) {
         [nc addObserver:self selector:@selector(sceneChanged:) name:n object:nil];
     }
     [self refreshScene];
@@ -219,7 +217,7 @@
     [self.audio playDiagnosticSentence:^(BOOL complete,NSString *detail) {
         BBOverlay *owner=weakSelf;
         if (!owner || epoch!=owner.requestEpoch) return;
-        [owner report:detail];
+        [owner report:[NSString stringWithFormat:@"%@: %@",complete?@"TTS DID-FINISH":@"TTS CHƯA XONG",detail]];
     }];
 }
 - (void)stop:(id)sender {
