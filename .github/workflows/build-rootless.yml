@@ -23,7 +23,11 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+      # The default cache restores into /usr/local/opt on macos-15-arm64,
+      # which is not writable; disable it to keep rootless builds reproducible.
       - uses: beerpiss/theos-action@v1
+        with:
+          cache: false
       - name: Build real arm64 rootless package
         run: |
           set -euo pipefail
