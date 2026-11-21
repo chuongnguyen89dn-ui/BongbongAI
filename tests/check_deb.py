@@ -22,13 +22,16 @@ entries = []
 for line in listing.splitlines():
     raw = line.rsplit(maxsplit=1)[-1]
     name = raw[2:] if raw.startswith("./") else raw
-    entries.append(name)
+    entries.append((line[0], name))
 
-# dpkg-deb on macOS omits the "./" prefix in output. Normalize, NEVER weaken rootless requirement.
-files = {name for name in entries if not name.endswith("/")}
+# macOS dpkg-deb omits "./". Do not confuse directory records with regular files.
+files = {name for kind, name in entries if kind == "-"}
 assert files, "No files in package"
-for name in files:
-    assert name.startswith("var/jb/"), "Path outside rootless prefix: " + name
+for kind, name in entries:
+    if name in (".", "var", "var/jb"):
+        assert kind == "d", "Unexpected top-level file: " + name
+    else:
+        assert name.startswith("var/jb/"), "Path outside rootless prefix: " + name
 
 tweak = "var/jb/Library/MobileSubstrate/DynamicLibraries/BongbongAI.dylib"
 filter_plist = "var/jb/Library/MobileSubstrate/DynamicLibraries/BongbongAI.plist"
