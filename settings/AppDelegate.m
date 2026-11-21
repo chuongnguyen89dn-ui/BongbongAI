@@ -21,13 +21,24 @@
     self.keyInput.textColor=UIColor.blackColor;self.keyInput.layer.cornerRadius=10;
     self.keyInput.autocapitalizationType=UITextAutocapitalizationTypeNone;
     self.keyInput.autocorrectionType=UITextAutocorrectionTypeNo;
+    self.keyInput.spellCheckingType=UITextSpellCheckingTypeNo;
+    self.keyInput.smartDashesType=UITextSmartDashesTypeNo;
+    self.keyInput.keyboardType=UIKeyboardTypeASCIICapable;
     self.keyInput.delegate=self;self.keyInput.clearButtonMode=UITextFieldViewModeWhileEditing;
+    [self.keyInput addTarget:self action:@selector(keyChanged:) forControlEvents:UIControlEventEditingChanged];
+    // iOS 16+ native paste control: no direct UIPasteboard read.
+    UIPasteControlConfiguration *pasteConfig=[[UIPasteControlConfiguration alloc] init];
+    pasteConfig.baseBackgroundColor=[UIColor colorWithRed:.34 green:.20 blue:.55 alpha:1];
+    pasteConfig.baseForegroundColor=UIColor.whiteColor;
+    UIPasteControl *pasteKey=[[UIPasteControl alloc] initWithConfiguration:pasteConfig];
+    pasteKey.target=self.keyInput;
+    pasteKey.accessibilityLabel=@"Dán API key từ bộ nhớ tạm";
     UIButton *save=[self button:@"Lưu API key" action:@selector(save:)];
     UIButton *erase=[self button:@"Xóa API key" action:@selector(erase:)];
     self.status=[UILabel new];self.status.numberOfLines=0;
     self.status.textColor=[UIColor colorWithRed:.75 green:.58 blue:1 alpha:1];
     self.status.font=[UIFont systemFontOfSize:14];
-    UIStackView *stack=[[UIStackView alloc] initWithArrangedSubviews:@[title,info,self.keyInput,save,erase,self.status]];
+    UIStackView *stack=[[UIStackView alloc] initWithArrangedSubviews:@[title,info,self.keyInput,pasteKey,save,erase,self.status]];
     stack.axis=UILayoutConstraintAxisVertical;stack.spacing=18;
     stack.translatesAutoresizingMaskIntoConstraints=NO;[vc.view addSubview:stack];
     UILayoutGuide *safe=vc.view.safeAreaLayoutGuide;
@@ -36,10 +47,11 @@
         [stack.trailingAnchor constraintEqualToAnchor:safe.trailingAnchor constant:-20],
         [stack.topAnchor constraintEqualToAnchor:safe.topAnchor constant:25],
         [self.keyInput.heightAnchor constraintEqualToConstant:46],
+        [pasteKey.heightAnchor constraintEqualToConstant:44],
         [save.heightAnchor constraintEqualToConstant:44],
         [erase.heightAnchor constraintEqualToConstant:44]]];
     self.window.rootViewController=vc;[self.window makeKeyAndVisible];
-    self.status.text=@"Prototype: key lưu ở preferences; chưa phải Keychain an toàn, chưa xác minh chéo tiến trình. Chỉ dùng key thử nghiệm có quota thấp.";
+    self.status.text=@"Sao chép key trên iPhone, nhấn Dán (Paste) rồi Lưu API key. Chỉ dùng key thử nghiệm có quota thấp: hiện lưu bằng preferences, chưa phải Keychain an toàn.";
     return YES;
 }
 - (UIButton *)button:(NSString *)text action:(SEL)sel {
@@ -49,6 +61,12 @@
     b.backgroundColor=[UIColor colorWithRed:.48 green:.25 blue:.78 alpha:1];
     b.layer.cornerRadius=10;[b addTarget:self action:sel forControlEvents:UIControlEventTouchUpInside];
     return b;
+}
+- (void)keyChanged:(UITextField *)field {
+    // Confirm entry without logging or displaying the secret itself.
+    self.status.text=field.text.length
+        ? @"Đã nhận nội dung vào ô key. Nhấn Lưu API key để áp dụng."
+        : @"Chưa có API key. Sao chép key, chạm Dán (Paste), rồi Lưu.";
 }
 - (void)save:(id)sender {
     NSString *v=[self.keyInput.text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];

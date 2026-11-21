@@ -14,6 +14,8 @@ checks={
  "direct-gemini":'https://generativelanguage.googleapis.com/v1beta/interactions' in source,
  "no-cloudflare":not re.search(r"workers\.dev|/v1/answer|/chat|/tts",source),
  "key-is-user-supplied":'x-goog-api-key' in source and 'geminiAPIKey' in source,
+ "native-user-initiated-key-paste":'UIPasteControl' in source and 'pasteKey.target=self.keyInput' in source,
+ "no-programmatic-clipboard-reading":'generalPasteboard' not in source,
  "no-hardcoded-secret":not re.search(r'AIza[\w-]{20,}',source),
  "api-revision":'Api-Revision' in source and '2026-05-20' in source,
  "active-tts-model":'gemini-3.8-flash-tts' in source and 'gemini-3.1-flash-tts-preview' not in source,

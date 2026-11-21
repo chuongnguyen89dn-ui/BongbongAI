@@ -6,6 +6,7 @@
 - No dependency on DuoCar/Omnicar; injection filter: \`com.apple.CarPlayApp\` only.
 - Purple floating CarPlay bubble + simple text input and fixed-sentence diagnostic.
 - BYOK: user enters their own Gemini API key on iPhone. **No Cloudflare Worker or hardcoded API key.**
+- To enter a long key without typing: copy it on iPhone, open **BongbongAI Config**, tap the system **Paste / Dán** button below the masked key field, then tap **Lưu API key**. This uses iOS 16+ UIPasteControl (not an app-initiated clipboard read). The key is never shown in status text.
 - Gemini returns complete text; Gemini 3.8 Flash TTS generates audio; queue full audio for one WAV/AVAudioPlayer playback, never play incomplete turns.
 - \`Đọc thử\` plays one built-in Apple TTS sentence to diagnose the CarPlay audio route without an API call. Text/fixed prompt only in v0.1, **no voice input yet**.
 
