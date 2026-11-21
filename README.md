@@ -29,3 +29,11 @@ See [build evidence](docs/BUILD_EVIDENCE.md), [device gate](docs/DEVICE_GATE.md)
 If Paste and Paste (cách 2) display controls but insert no text, the config app now offers **Nhập API key từ Tệp .txt**. Copy/transfer a UTF-8 file with **one key only** onto the **same iPhone where BongbongAI is installed**, using the Apple Files app or a local transfer method such as AirDrop. Then open BongbongAI, select the file, tap **Kiểm tra số ký tự đã nhập**, and tap **Lưu API key**. Delete the source text file afterwards. No key content is printed to logs or status messages. The picker imports a copy and cleans up its sandbox copy.
 For diagnosis, copy test text using **Notes on the same iPhone**, not a different device, before concluding the app's pasteboard access is broken.
 This is still unverified on the target device and does not prove that the CarPlay process can read saved preferences.
+
+### v0.1.3 — diagnostic key field (device verification pending)
+Apple iOS secureTextEntry disables copying and masks all displayed characters. The previous releases always used a secure field, so a missing Copy control after typing in the key field is expected OS behavior, not proof of a paste failure.
+- Use the **Gõ thử chữ** non-secret diagnostic field to test keyboard and native Copy without exposing a key.
+- The API key has a visible **character count**; use **Hiện API key (cho phép Copy)** to temporarily reveal/inspect the text and enable the Copy menu, then hide it immediately. Never share a screenshot with the key visible.
+- **Mở bàn phím để nhập key** explicitly tests the key field's first-responder status.
+- The original native Paste, user-tap clipboard fallback, and file import remain supported.
+Build/source PASS is not device PASS; actual typing, paste and CarPlay cross-process access must be verified on target hardware.

@@ -4,7 +4,9 @@
 
 @interface AppDelegate () <UIDocumentPickerDelegate>
 @property(nonatomic,strong) UITextField *keyInput;
+@property(nonatomic,strong) UITextField *testInput;
 @property(nonatomic,strong) UILabel *status;
+@property(nonatomic,strong) UILabel *keyCount;
 @end
 @implementation AppDelegate
 - (BOOL)application:(UIApplication *)app didFinishLaunchingWithOptions:(NSDictionary *)options {
@@ -12,7 +14,7 @@
     UIViewController *vc=[UIViewController new];
     vc.view.backgroundColor=[UIColor colorWithRed:.08 green:.07 blue:.12 alpha:1];
     UILabel *title=[UILabel new];
-    title.text=@"BongbongAI · Gemini trực tiếp (v0.1.2)";title.numberOfLines=0;
+    title.text=@"BongbongAI · Gemini trực tiếp (v0.1.3)";title.numberOfLines=0;
     title.textColor=UIColor.whiteColor;title.font=[UIFont boldSystemFontOfSize:20];
     UILabel *info=[UILabel new];
     info.text=@"Nhập Gemini API key của riêng bạn. Không cần Cloudflare. Ứng dụng iPhone chỉ cấu hình; bong bóng chỉ hiện trên màn CarPlay.";
@@ -27,6 +29,24 @@
     self.keyInput.keyboardType=UIKeyboardTypeASCIICapable;
     self.keyInput.delegate=self;self.keyInput.clearButtonMode=UITextFieldViewModeWhileEditing;
     [self.keyInput addTarget:self action:@selector(keyChanged:) forControlEvents:UIControlEventEditingChanged];
+    self.keyInput.accessibilityLabel=@"Ô nhập Gemini API key; văn bản đang bị che";
+    // A normal text field tests iOS keyboard and Copy independently of secure API key.
+    self.testInput=[UITextField new];
+    self.testInput.placeholder=@"Gõ thử chữ (không nhập API key ở đây)";
+    self.testInput.backgroundColor=UIColor.whiteColor;
+    self.testInput.textColor=UIColor.blackColor;
+    self.testInput.layer.cornerRadius=10;
+    self.testInput.borderStyle=UITextBorderStyleRoundedRect;
+    self.testInput.autocorrectionType=UITextAutocorrectionTypeNo;
+    self.testInput.autocapitalizationType=UITextAutocapitalizationTypeNone;
+    self.testInput.secureTextEntry=NO;
+    [self.testInput addTarget:self action:@selector(testChanged:) forControlEvents:UIControlEventEditingChanged];
+
+    self.keyCount=[UILabel new];self.keyCount.textColor=UIColor.lightGrayColor;
+    self.keyCount.font=[UIFont systemFontOfSize:13];
+    self.keyCount.text=@"API key: 0 ký tự (đang ẩn)";
+    UIButton *toggleVisibility=[self button:@"Hiện API key (cho phép Copy)" action:@selector(toggleKeyVisibility:)];
+    UIButton *focusKey=[self button:@"Mở bàn phím để nhập key" action:@selector(focusKey:)];
     // iOS 16+ native paste control: no direct UIPasteboard read.
     UIPasteControlConfiguration *pasteConfig=[[UIPasteControlConfiguration alloc] init];
     pasteConfig.baseBackgroundColor=[UIColor colorWithRed:.34 green:.20 blue:.55 alpha:1];
@@ -44,7 +64,7 @@
     self.status=[UILabel new];self.status.numberOfLines=0;
     self.status.textColor=[UIColor colorWithRed:.75 green:.58 blue:1 alpha:1];
     self.status.font=[UIFont systemFontOfSize:14];
-    UIStackView *stack=[[UIStackView alloc] initWithArrangedSubviews:@[title,info,self.keyInput,pasteKey,pasteFallback,importFile,inspect,save,erase,self.status]];
+    UIStackView *stack=[[UIStackView alloc] initWithArrangedSubviews:@[title,info,self.testInput,self.keyInput,self.keyCount,toggleVisibility,focusKey,pasteKey,pasteFallback,importFile,inspect,save,erase,self.status]];
     stack.axis=UILayoutConstraintAxisVertical;stack.spacing=18;
     UIScrollView *scroll=[UIScrollView new];
     scroll.translatesAutoresizingMaskIntoConstraints=NO;
@@ -63,7 +83,10 @@
         [stack.topAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.topAnchor constant:25],
         [stack.bottomAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.bottomAnchor constant:-20],
         [stack.widthAnchor constraintEqualToAnchor:scroll.frameLayoutGuide.widthAnchor constant:-40],
+        [self.testInput.heightAnchor constraintEqualToConstant:46],
         [self.keyInput.heightAnchor constraintEqualToConstant:46],
+        [toggleVisibility.heightAnchor constraintEqualToConstant:44],
+        [focusKey.heightAnchor constraintEqualToConstant:44],
         [pasteKey.heightAnchor constraintEqualToConstant:44],
         [pasteFallback.heightAnchor constraintEqualToConstant:44],
         [importFile.heightAnchor constraintEqualToConstant:44],
@@ -71,7 +94,7 @@
         [save.heightAnchor constraintEqualToConstant:44],
         [erase.heightAnchor constraintEqualToConstant:44]]];
     self.window.rootViewController=vc;[self.window makeKeyAndVisible];
-    self.status.text=@"v0.1.2: nếu cả hai nút Dán không hoạt động, dùng Nhập API key từ Tệp .txt. Kiểm tra số ký tự rồi Lưu. Chỉ dùng key thử nghiệm vì preferences chưa phải Keychain.";
+    self.status.text=@"v0.1.3: gõ thử vào ô trắng đầu tiên. Ô API key mặc định che chữ và khóa Copy; nhấn Hiện API key để kiểm tra. Không chụp ảnh khi đang hiện key. Chỉ dùng key thử nghiệm.";
     return YES;
 }
 - (UIButton *)button:(NSString *)text action:(SEL)sel {
@@ -82,11 +105,47 @@
     b.layer.cornerRadius=10;[b addTarget:self action:sel forControlEvents:UIControlEventTouchUpInside];
     return b;
 }
+- (void)updateKeyCount {
+    self.keyCount.text=[NSString stringWithFormat:@"API key: %lu ký tự (%@)",
+         (unsigned long)self.keyInput.text.length,
+         self.keyInput.isSecureTextEntry?@"đang ẩn":@"đang hiện"];
+}
 - (void)keyChanged:(UITextField *)field {
-    // Confirm entry without logging or displaying the secret itself.
+    // Never log or reveal the key itself.
+    [self updateKeyCount];
     self.status.text=field.text.length
-        ? @"Đã nhận nội dung vào ô key. Nhấn Lưu API key để áp dụng."
-        : @"Chưa có API key. Sao chép key, chạm Dán (Paste), rồi Lưu.";
+        ? @"Đã có ký tự trong ô key. Xem số lượng bên trên, rồi Lưu API key."
+        : @"Ô key rỗng; chưa nhận được chữ.";
+}
+- (void)testChanged:(UITextField *)field {
+    self.status.text=[NSString stringWithFormat:
+       @"Ô thử nhập nhận %lu ký tự. Tại đây có thể chọn chữ rồi Copy; KHÔNG nhập API key vào ô thử.",
+       (unsigned long)field.text.length];
+}
+- (void)toggleKeyVisibility:(UIButton *)button {
+    BOOL wasEditing=self.keyInput.isFirstResponder;
+    if (wasEditing) [self.keyInput resignFirstResponder];
+    NSString *saved=[self.keyInput.text copy];
+    self.keyInput.secureTextEntry=!self.keyInput.isSecureTextEntry;
+    self.keyInput.text=saved;
+    [button setTitle:self.keyInput.isSecureTextEntry?@"Hiện API key (cho phép Copy)":@"Ẩn API key"
+           forState:UIControlStateNormal];
+    self.keyInput.accessibilityLabel=self.keyInput.isSecureTextEntry?
+        @"Ô nhập Gemini API key; đang che":@"Ô nhập Gemini API key; đang hiển thị";
+    [self updateKeyCount];
+    self.status.text=self.keyInput.isSecureTextEntry
+        ? @"Đã ẩn API key; chức năng Copy bị iOS khóa trong chế độ mật khẩu."
+        : @"ĐANG HIỆN KEY: có thể chọn/Copy. Hãy bấm Ẩn API key sau khi kiểm tra, không chụp màn hình.";
+    if (wasEditing) [self.keyInput becomeFirstResponder];
+}
+- (void)focusKey:(id)sender {
+    BOOL ok=[self.keyInput becomeFirstResponder];
+    self.status.text=ok?
+        @"Đã yêu cầu mở bàn phím cho ô API key. Gõ thử rồi xem bộ đếm ký tự.":
+        @"Không thể kích hoạt bàn phím cho ô API key trên môi trường này.";
+}
+- (void)textFieldDidBeginEditing:(UITextField *)field {
+    if (field==self.keyInput) self.status.text=@"Ô API key đang nhận bàn phím; gõ và xem số ký tự.";
 }
 - (void)pasteFromClipboard:(id)sender {
     // This is exclusively invoked by a visible user-tap button. On iOS 16+ the OS
@@ -98,6 +157,7 @@
     }
     NSString *normalized=[copied stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
     self.keyInput.text=normalized;
+    [self updateKeyCount];
     // Report only character count, never clipboard/key content or any prefix.
     self.status.text=[NSString stringWithFormat:@"Đã dán %lu ký tự. Bấm Lưu API key.",(unsigned long)normalized.length];
 }
@@ -147,6 +207,7 @@
         return;
     }
     self.keyInput.text=key;
+    [self updateKeyCount];
     self.status.text=[NSString stringWithFormat:@"Đã nhập %lu ký tự từ tệp. Bấm Lưu API key.",(unsigned long)key.length];
 }
 - (void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller {
@@ -162,15 +223,16 @@
     Boolean synced=CFPreferencesAppSynchronize(CFSTR("com.chuong.bongbongai"));
     id saved=CFBridgingRelease(CFPreferencesCopyAppValue(CFSTR("geminiAPIKey"),CFSTR("com.chuong.bongbongai")));
     BOOL verified=synced && [saved isKindOfClass:NSString.class] && [saved isEqualToString:v];
-    if (verified) self.keyInput.text=@"";
+    if (verified) {self.keyInput.text=@"";[self updateKeyCount];}
     self.status.text=verified
-        ? @"v0.1.2: Đã lưu và đọc lại key trên iPhone. Vẫn cần kiểm tra CarPlay đọc được."
+        ? @"v0.1.3: Đã lưu/đọc lại key trên iPhone. Chưa xác nhận CarPlay đọc được."
         : @"Lỗi lưu hoặc đọc lại key trên iPhone. Chưa coi là lưu thành công.";
 }
 - (void)erase:(id)sender {
     CFPreferencesSetAppValue(CFSTR("geminiAPIKey"),NULL,CFSTR("com.chuong.bongbongai"));
     Boolean ok=CFPreferencesAppSynchronize(CFSTR("com.chuong.bongbongai"));
     self.keyInput.text=@"";
+    [self updateKeyCount];
     self.status.text=ok?@"Đã xóa key khỏi preferences.":@"Không xóa được key.";
 }
 - (BOOL)textFieldShouldReturn:(UITextField *)field {
