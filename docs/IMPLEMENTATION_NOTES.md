@@ -1,10 +1,10 @@
-# BongbongAI v0.1 — các rủi ro còn mở
+# Design constraints and open blockers
 
-1. CarPlayApp có thể không cung cấp external UIWindowScene. Overlay fail-closed thay vì tự vẽ lên iPhone.
-2. Windows khác process có thể che bong bóng trên hosted UI; chưa xác minh z-order.
-3. Một số giao diện CarPlay khóa bàn phím. v0.1 cho phép nhấn Hỏi AI với câu mẫu khi trống; không dùng khi xe đang chạy.
-4. Cấu hình key lưu CFPreferences; chưa chứng minh đọc chéo process/sandbox hay an toàn. Chỉ dùng key thử nghiệm có giới hạn. Cần cơ chế Keychain + IPC riêng trước phát hành.
-5. Direct Interactions API non-streaming, store=false; parser đòi status=completed. Không cắt câu trên 500 ký tự: trả lỗi.
-6. Gemini TTS có thể trả audio thiếu dù HTTP 200. Prototype buộc một block PCM 24 kHz, không chứng minh nội dung ngữ âm chỉ bằng duration. DEVICE nghe đủ chữ cuối.
-7. Không đổi AVAudioSession toàn process ở v0.1. Apple TTS chỉ là diagnostic, không fallback giấu lỗi.
-8. Môi trường viết mã chưa có Theos/iOS SDK, do đó chưa có compile/lint với iOS headers hoặc .deb hợp lệ.
+BongbongAI is a *separate* package with CarPlayApp-only injection filter; no changes to DuoCar, no Cloudflare Worker.
+Text response is retrieved from the Gemini Interactions API. A TTS request is sent for each bounded text segment. Every segment must succeed before joining raw 24kHz/16-bit/mono PCM into one valid WAV and playing. Do not silently cut sentences.
+
+API model 2026-11-21: Gemini 3.5 Flash Lite (text), Gemini 3.8 Flash TTS (speech). Non-streaming 3.8 defaults to audio/wav; explicitly request audio/l16, 24000 Hz.
+
+Known unresolved: iPhone config and CarPlay processes may not share CFPreferences due to sandboxing; no proper Keychain/IPC broker yet. UIWindowScene external-screen assumption and overlay z-order vs hosted layers are unverified. Microphone/STT has not been built. Real audio completion must be confirmed on vehicle.
+
+See docs/DEVICE_GATE.md for per-profile test matrix.

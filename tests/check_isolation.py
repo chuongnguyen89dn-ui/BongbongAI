@@ -1,32 +1,35 @@
 #!/usr/bin/env python3
-"""Static-only source checks; never replace Theos build/device tests."""
+"""Source-only invariants. Does not substitute build, API or device verification."""
 from pathlib import Path
-import plistlib,re
+import plistlib, re
+
 root=Path(__file__).resolve().parents[1]
-overlay="\n".join(p.read_text() for p in (root/"overlay").glob("*.m"))
-settings="\n".join(p.read_text() for p in (root/"settings").glob("*.m"))
-src=overlay+settings
-filter_=plistlib.loads((root/"overlay"/"BongbongAI.plist").read_bytes())
+source="\n".join(p.read_text() for p in [*(root/"overlay").glob("*.m"),*(root/"overlay").glob("*.c"),*(root/"settings").glob("*.m")])
+plist=plistlib.loads((root/"overlay"/"BongbongAI.plist").read_bytes())
 control=(root/"control").read_text()
 checks={
- "package-id":"Package: com.chuong.bongbongai" in control,
- "carplay-only-filter":filter_["Filter"]["Bundles"]==["com.apple.CarPlayApp"],
- "no-duocar-dependencies":not re.search(r"(DuoCar|OmniCar|DuoNavi|com\.chuong\.duocar)",src),
- "no-cloudflare-worker":"workers.dev" not in src and "/v1/answer" not in src,
- "direct-gemini-endpoint":"https://generativelanguage.googleapis.com/v1beta/interactions" in src,
- "byok-header":"x-goog-api-key" in src and "geminiAPIKey" in src,
- "stateless-no-history":'@"store":@NO' in src,
- "complete-gate":'@"completed"' in src and '@"steps"' in src,
- "no-silent-cut":"trimmed.length>500" in src,
- "single-tts-block":"blocks!=1" in src,
- "full-wav":"WAVEfmt" in src and "initWithData:wav" in src,
- "no-live-streaming":"AVAudioPlayerNode" not in src,
- "no-phone-bubble":"if (!windowScene.screen || windowScene.screen==phone) continue" in src,
- "passthrough":"pointInside:" in src and "bubbleHit" in src,
- "user-triggered":"- (void)ask:(id)sender" in src,
- "no-embedded-key":not re.search(r"AIza[\w-]{20,}",src),
- "device-pending":"DEVICE PENDING" in (root/"docs"/"DEVICE_GATE.md").read_text(),
+ "separate-package-id":"Package: com.chuong.bongbongai" in control,
+ "carplay-only-injection":plist["Filter"]["Bundles"]==["com.apple.CarPlayApp"],
+ "no-duocar-hooks":not re.search(r"DuoCar|OmniCar|DuoNavi|com\.chuong\.duocar",source,re.I),
+ "direct-gemini":'https://generativelanguage.googleapis.com/v1beta/interactions' in source,
+ "no-cloudflare":not re.search(r"workers\.dev|/v1/answer|/chat|/tts",source),
+ "key-is-user-supplied":'x-goog-api-key' in source and 'geminiAPIKey' in source,
+ "no-hardcoded-secret":not re.search(r'AIza[\w-]{20,}',source),
+ "api-revision":'Api-Revision' in source and '2026-05-20' in source,
+ "active-tts-model":'gemini-3.8-flash-tts' in source and 'gemini-3.1-flash-tts-preview' not in source,
+ "stateless-by-default":'@"store":@NO' in source,
+ "wait-for-complete":'@"completed"' in source and '@"steps"' in source,
+ "text-not-silently-trimmed":'complete.length>4200' in source,
+ "split-not-drop":'BBSpeechSegments' in source and 'speechAt:idx+1' in source,
+ "all-pcm-before-play":'BBWrapPCM(pcm)' in source and 'initWithData:wav' in source,
+ "host-testable-wav-core":'bb_pcm_to_wav' in source,
+ "one-block-per-segment":'audioCount!=1' in source,
+ "no-live-streaming":'AVAudioPlayerNode' not in source,
+ "external-screen-only":'windowScene.screen==phone' in source,
+ "touch-passthrough":'pointInside:' in source and 'bubbleHit' in source,
+ "not-playing-on-stop":'- (void)stop:' in source,
+ "not-complete-by-default":"DEVICE PENDING" in (root/"docs"/"DEVICE_GATE.md").read_text(),
 }
-for name,ok in checks.items():print(("PASS " if ok else "FAIL ")+name)
+for label,ok in checks.items():print(f"{'PASS' if ok else 'FAIL'} {label}")
 if not all(checks.values()):raise SystemExit(1)
-print(f"{len(checks)} static-only checks PASS; BUILD/DEVICE NOT TESTED")
+print(f"PASS {len(checks)}/{len(checks)} static checks; this is NOT BUILD or DEVICE PASS")

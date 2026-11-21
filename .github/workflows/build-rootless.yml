@@ -1,0 +1,43 @@
+name: BongbongAI rootless build check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host-source-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Portable PCM and isolation checks
+        run: |
+          chmod +x tests/run_host.sh
+          ./tests/run_host.sh
+
+  compile-and-stage:
+    needs: host-source-checks
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: beerpiss/theos-action@v1
+      - name: Build real arm64 rootless package
+        run: |
+          set -euo pipefail
+          make clean package FINALPACKAGE=1 messages=yes
+          ls -lah packages
+      - name: Check package identity and payload
+        run: |
+          set -euo pipefail
+          command -v dpkg-deb || brew install dpkg
+          python3 tests/check_deb.py packages/*.deb
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: BongbongAI-ROOTLESS-BUILD-UNTESTED
+          path: packages/*.deb
+          if-no-files-found: error
+          retention-days: 7

@@ -1,33 +1,25 @@
-# BongbongAI — AI bubble độc lập trên CarPlay
+# BongbongAI — independent CarPlay AI bubble
 
-**v0.1.0 / SOURCE PROTOTYPE. Chưa có BUILD PASS, DEVICE PASS hoặc DEB hợp lệ.**
+**SOURCE PROTOTYPE ONLY. NO VERIFIED DEB OR CARPLAY DEVICE PASS.**
 
-Dự án riêng hoàn toàn với DuoCar/OmniCar/DuoNavi. Mục tiêu: bong bóng tím trên CarPlay, người dùng nhập **Gemini API key** trên iPhone, hỏi AI rồi nghe câu trả lời đủ ý. Không dùng Cloudflare Worker hoặc Gemini Live.
+- Bundle/package: \`com.chuong.bongbongai\`, iOS 16+ arm64 rootless, Theos.
+- No dependency on DuoCar/Omnicar; injection filter: \`com.apple.CarPlayApp\` only.
+- Purple floating CarPlay bubble + simple text input and fixed-sentence diagnostic.
+- BYOK: user enters their own Gemini API key on iPhone. **No Cloudflare Worker or hardcoded API key.**
+- Gemini returns complete text; Gemini 3.8 Flash TTS generates audio; queue full audio for one WAV/AVAudioPlayer playback, never play incomplete turns.
+- \`Đọc thử\` plays one built-in Apple TTS sentence to diagnose the CarPlay audio route without an API call. Text/fixed prompt only in v0.1, **no voice input yet**.
 
-## Thiết kế đã chốt
+### Evidence (not device validation)
 
-1. Tweak Theos rootless, package `com.chuong.bongbongai`; injection chỉ trong `com.apple.CarPlayApp`, chỉ hiện bong bóng trên external `UIWindowScene`.
-2. **BYOK trực tiếp Google**: API HTTPS `https://generativelanguage.googleapis.com/v1beta/interactions`, header `x-goog-api-key`; mỗi request `store:false`.
-3. **Hai bước tách biệt**: Gemini văn bản `gemini-3.5-flash-lite` hoàn tất rồi mới Gemini TTS `gemini-3.1-flash-tts-preview`; nhận PCM 24 kHz, tạo WAV đầy đủ và phát qua một AVAudioPlayer. Không tự cắt câu dài hoặc phát audio thiếu.
-4. Nút **Đọc thử** với Apple TTS riêng để xác định đường âm thanh khi Gemini chưa có API key. Nút Dừng hủy request/âm thanh.
-5. Bản đầu thử nhập chữ hoặc câu mẫu (khi keyboard không khả dụng). Micro/STT là giai đoạn sau khi đường audio đã DEVICE PASS.
+\`\`\`sh
+chmod +x tests/run_host.sh
+./tests/run_host.sh
+make package FINALPACKAGE=1
+python3 tests/check_deb.py packages/*.deb
+\`\`\`
 
-## Nguyên tắc nghiệm thu
+Local host checks: 23 portable PCM/WAV assertions and 21 static source isolation checks. This environment has **no Theos**, so native package compilation is blocked locally. A macOS GitHub Actions workflow will attempt a real build and upload an UNTESTED artifact only if its checks succeed.
 
-- `STATIC PASS`: kiểm tra nguồn với fixture hoặc script **không đồng nghĩa** với compile hay CarPlay hoạt động.
-- `BUILD PASS`: Theos đóng gói đúng rootless và kiểm tra DEP/filters.
-- `DEVICE PASS`: xác nhận trực tiếp UI/touch, API, lời cuối câu nghe trên loa, các profile iCarCast/xe thật. Callback phát xong không chứng minh người dùng nghe đủ.
+**Security blocker:** Config currently uses CFPreferences for the user's test API key; not secure Keychain storage and cross-process readability not validated. Do not put a valuable production key into a test build. A Keychain + authenticated IPC broker is needed for release.
 
-## Quyền riêng tư và cảnh báo
-
-**Không hardcode hoặc commit API key.** Trong bản prototype, chia sẻ key giữa app Config và CarPlayApp qua CFPreferences còn chưa được thử trên thiết bị và **không phải bảo mật Keychain**. Chỉ dùng key thử nghiệm hạn mức thấp; trước phát hành phải có cơ chế lưu trữ/IPC an toàn hơn. Trên thiết bị jailbreak, mọi client-side key đều có rủi ro bị trích xuất.
-
-Không triển khai bất kỳ Worker hay thay đổi nào lên DuoCar. Chỉ kiểm tra trên xe khi **đang đỗ**.
-
-## Tài liệu kỹ thuật
-
-- [Google Gemini Interactions](https://ai.google.dev/gemini-api/docs/get-started)
-- [Gemini TTS](https://ai.google.dev/gemini-api/docs/speech-generation)
-- [Theos rootless](https://theos.dev/docs/rootless)
-
-Các file source và phép kiểm tra sẽ được bổ sung trong những commit riêng, để không đánh đồng bản thiết kế với ứng dụng đã chạy.
+See [build evidence](docs/BUILD_EVIDENCE.md), [device gate](docs/DEVICE_GATE.md), [implementation limitations](docs/IMPLEMENTATION_NOTES.md). Use only while the car is parked.
