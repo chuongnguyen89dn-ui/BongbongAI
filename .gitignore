@@ -1,0 +1,8 @@
+.theos/
+packages/
+*.deb
+.env
+.env.*
+!*.example
+*.log
+.DS_Store

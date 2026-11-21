@@ -1,0 +1,9 @@
+Package: com.chuong.bongbongai
+Name: BongbongAI (CarPlay)
+Version: 0.1.0
+Architecture: iphoneos-arm64
+Maintainer: BongbongAI project
+Author: BongbongAI project
+Depends: firmware (>= 16.0), mobilesubstrate
+Section: Tweaks
+Description: Independent CarPlay AI bubble, direct Gemini text and full-WAV playback prototype.
