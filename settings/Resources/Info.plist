@@ -6,8 +6,8 @@
 <key>CFBundleName</key><string>BongbongAI Config</string>
 <key>CFBundleDisplayName</key><string>BongbongAI</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.1.1</string>
-<key>CFBundleVersion</key><string>2</string>
+<key>CFBundleShortVersionString</key><string>0.1.2</string>
+<key>CFBundleVersion</key><string>3</string>
 <key>LSRequiresIPhoneOS</key><true/>
 <key>MinimumOSVersion</key><string>16.0</string>
 <key>UILaunchScreen</key><dict/>

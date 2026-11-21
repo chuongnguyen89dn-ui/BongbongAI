@@ -24,3 +24,8 @@ Local host checks: 23 portable PCM/WAV assertions and 21 static source isolation
 **Security blocker:** Config currently uses CFPreferences for the user's test API key; not secure Keychain storage and cross-process readability not validated. Do not put a valuable production key into a test build. A Keychain + authenticated IPC broker is needed for release.
 
 See [build evidence](docs/BUILD_EVIDENCE.md), [device gate](docs/DEVICE_GATE.md), [implementation limitations](docs/IMPLEMENTATION_NOTES.md). Use only while the car is parked.
+
+### v0.1.2 — no-clipboard key entry (device verification pending)
+If Paste and Paste (cách 2) display controls but insert no text, the config app now offers **Nhập API key từ Tệp .txt**. Copy/transfer a UTF-8 file with **one key only** onto the **same iPhone where BongbongAI is installed**, using the Apple Files app or a local transfer method such as AirDrop. Then open BongbongAI, select the file, tap **Kiểm tra số ký tự đã nhập**, and tap **Lưu API key**. Delete the source text file afterwards. No key content is printed to logs or status messages. The picker imports a copy and cleans up its sandbox copy.
+For diagnosis, copy test text using **Notes on the same iPhone**, not a different device, before concluding the app's pasteboard access is broken.
+This is still unverified on the target device and does not prove that the CarPlay process can read saved preferences.
